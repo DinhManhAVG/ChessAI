@@ -14,7 +14,6 @@ IMAGES = {}
 def load_images():
     pieces = ["wp", "wR", "wN", "wB", "wK", "wQ", "bp", "bR", "bN", "bB", "bK", "bQ"]
     for piece in pieces:
-        print
         IMAGES[piece] = p.transform.scale(
             p.image.load(f"images/{piece}.png"), size=(SQ_SIZE, SQ_SIZE)
         )
@@ -34,10 +33,36 @@ def main():
     load_images()
 
     running = True
+    sq_selected = ()  # Lưu trữ click cuối cùng of người chơi
+    player_clicks = []  # Lưu giữ click của người dùng (click đầu, và cuối khi chọn 1 ô)
+
     while running:
         for event in p.event.get():
             if event.type == p.QUIT:
                 running = False
+            elif event.type == p.MOUSEBUTTONDOWN:
+                location = p.mouse.get_pos()
+
+                # Do trục X nằm ngang => Tìm index của column, row
+                column = location[0] // SQ_SIZE
+                row = location[1] // SQ_SIZE
+
+                if sq_selected == (row, column):
+                    # Người chơi đã click 2 lần vào 1 ô, tiến hành clear
+                    sq_selected = ()
+                    player_clicks = []
+                else:
+                    sq_selected = (row, column)
+                    player_clicks.append(sq_selected)
+
+            if len(player_clicks) == 2:
+                move = ChessEngine.Move(
+                    player_clicks[0], player_clicks[1], game_state.board
+                )
+                # print(move.get_chess_notation())
+                game_state.makeMove(move)
+                sq_selected = ()
+                player_clicks = []
 
         draw_game_state(screen, game_state)
 
@@ -70,6 +95,7 @@ def draw_board(screen):
 
 
 def draw_pieces(screen, board):
+    print("draw_pieces")
     """
     board: Ma trận chứa các quân cờ
     """
@@ -79,6 +105,7 @@ def draw_pieces(screen, board):
 
             # Ô trống
             if piece != "--":
+                # Vẽ một hình ảnh lên một bề mặt
                 screen.blit(
                     IMAGES[piece],
                     # Định nghĩa HCN có các tham số left, top, width, height
