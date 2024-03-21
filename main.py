@@ -30,6 +30,9 @@ def main():
     screen.fill(p.Color("white"))
 
     game_state = ChessEngine.GameState()
+    valid_moves = game_state.getValidMoves()
+    move_made = False # Biến cờ trạng thái khi thực hiện 1 nước đi
+
     load_images()
 
     running = True
@@ -55,15 +58,26 @@ def main():
                     sq_selected = (row, column)
                     player_clicks.append(sq_selected)
 
-            if len(player_clicks) == 2:
-                move = ChessEngine.Move(
-                    player_clicks[0], player_clicks[1], game_state.board
-                )
-                # print(move.get_chess_notation())
-                game_state.makeMove(move)
-                sq_selected = ()
-                player_clicks = []
-
+                if len(player_clicks) == 2:
+                    move = ChessEngine.Move(
+                        player_clicks[0], player_clicks[1], game_state.board
+                    )
+                    print(move.getChessNotation())
+                    if move in valid_moves:
+                        game_state.makeMove(move)
+                        move_made = True
+                    sq_selected = ()
+                    player_clicks = []
+            # Xử lý event key handlers
+            elif event.type == p.KEYDOWN:
+                # Nhấn phím Z
+                if event.mod & p.KMOD_CTRL and event.key == p.K_z:
+                    game_state.undoMove()
+                    move_made = True
+            
+        if move_made:
+            valid_moves = game_state.getValidMoves()
+            move_made = False
         draw_game_state(screen, game_state)
 
         # Điều chỉnh tốc độ của khung hinh
@@ -95,7 +109,6 @@ def draw_board(screen):
 
 
 def draw_pieces(screen, board):
-    print("draw_pieces")
     """
     board: Ma trận chứa các quân cờ
     """
