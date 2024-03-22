@@ -22,6 +22,10 @@ class GameState:
 
         # Ghi lại nhật kí di chuyển
         self.moveLog: List[Move] = []
+        self.whiteKingLocation = (7, 4)
+        self.blackKingLocation = (0, 4)
+        self.checkMate = False
+        self.staleMate = False
 
 
     def makeMove(self, move: "Move") -> None:
@@ -29,6 +33,11 @@ class GameState:
         self.board[move.endRow][move.endColumn] = move.pieceMoved
         self.moveLog.append(move)
         self.whiteToMove = not self.whiteToMove # Chuyển lượt chơi
+        # Cập nhật lại vị trí quân vua khi di chuyển
+        if move.pieceMoved == 'wK':
+            self.whiteKingLocation = (move.endRow, move.endColumn)
+        elif move.pieceMoved == 'bK':
+            self.blackKingLocation = (move.endRow, move.endColumn)
 
     def undoMove(self):
         if len(self.moveLog) != 0: # Đã di chuyển nước cờ rồi
@@ -36,10 +45,61 @@ class GameState:
             self.board[move.startRow][move.startColumn] = move.pieceMoved
             self.board[move.endRow][move.endColumn] = move.pieceCaptured
             self.whiteToMove = not self.whiteToMove # Đổi lượt chơi
-
+            
+            # Cập nhật lại vị trí quân vua khi di chuyển
+            if move.pieceMoved == 'wK':
+                self.whiteKingLocation = (move.startRow, move.startColumn)
+            elif move.pieceMoved == 'bK':
+                self.blackKingLocation = (move.startRow, move.startColumn)
+                
     def getValidMoves(self):
-        return self.getAllPossibleMoves()
+        # Sinh ra tất cả nước đi có thể
+        moves = self.getAllPossibleMoves()
+        # Mỗi nước đi, tạo ra các nước đi
+        for i in range(len(moves) - 1, -1, -1):
+            self.makeMove(moves[i])
+            # Tạo ra tất cả các nước đi của đối thủ
+
+            # Mỗi nước đi đối thủ, nếu họ tấn công vua
+            self.whiteToMove = not self.whiteToMove
+            if self.inCheck():
+                moves.remove(moves[i]) # Nếu họ có thể tấn công vua thì nước đi đó không hợp lệ
+            self.whiteToMove = not self.whiteToMove
+            self.undoMove()
+        if len(moves) == 0: # Không có nước đi hợp lệ nào
+            if self.inCheck():
+                self.checkMate = True
+                print("Check mate")
+            else:
+                self.staleMate = True
+                print("End game")
+        else:
+            self.checkMate = False
+            self.staleMate = False
+        return moves
     
+    def inCheck(self):
+        """
+        Xác định người chơi hiện tại đang được check
+        """
+        if self.whiteToMove:
+            return self.squareUnderAttack(self.whiteKingLocation[0], self.whiteKingLocation[1])
+        else:
+            return self.squareUnderAttack(self.blackKingLocation[0], self.blackKingLocation[1])
+    
+    def squareUnderAttack(self, row, col) -> bool:
+        """
+        Xác định kẻ địch có thể tấn công ô (row, col) không
+        """
+        self.whiteToMove = not self.whiteToMove # Đổi lượt cho đối thủ đánh thử xem có ăn được quân vua không nghĩa là ô rơw col đang kiểm tra
+        opp_moves: List[Move] = self.getAllPossibleMoves()
+        self.whiteToMove = not self.whiteToMove
+        for move in opp_moves:
+            if move.endRow == row and move.endColumn == col: # Ô vuông bị tấn công
+                return True;
+        return False        
+        
+
     def getAllPossibleMoves(self):
         moves = []
         for row in range(len(self.board)):
