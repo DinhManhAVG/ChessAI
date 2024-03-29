@@ -30,7 +30,7 @@ def main():
     screen.fill(p.Color("white"))
 
     game_state = ChessEngine.GameState()
-    valid_moves = game_state.getValidMoves()
+    valid_moves = game_state.getValidMoves_2()
     move_made = False # Biến cờ trạng thái khi thực hiện 1 nước đi
 
     load_images()
@@ -76,7 +76,7 @@ def main():
                     move_made = True
             
         if move_made:
-            valid_moves = game_state.getValidMoves()
+            valid_moves = game_state.getValidMoves_2()
             move_made = False
         draw_game_state(screen, game_state)
 
