@@ -144,9 +144,6 @@ class GameState:
                     self.currentCastlingRight.bks = False
             
     def getValidMoves(self):
-        for log in self.castleRightsLog:
-            print(log.wks, log.bks, log.wqs, log.bqs, end=",")
-        print()
         temp_enpassant_possible = self.enpassantPossible
         temp_castle_rights = CastleRights(self.currentCastlingRight.wks, self.currentCastlingRight.bks,
                                             self.currentCastlingRight.wqs, self.currentCastlingRight.bqs)
