@@ -1,5 +1,5 @@
 import pygame as p
-import ChessEngine
+import ChessEngine, SmartMoveFinder as smd
 
 WIDTH = HEIGHT = 512
 DIMENSION = 8
@@ -41,16 +41,21 @@ def main():
     sq_selected = ()  # Lưu trữ click cuối cùng of người chơi
     player_clicks = []  # Lưu giữ click của người dùng (click đầu, và cuối khi chọn 1 ô)
     game_over = False
-    
+    # playerOne là người chơi quân trắng và playerTwo là người chơi quân đen
+    # Nếu cái nào là False thì là AI chơi còn True là người chơi
+    playerOne = False  # Nếu chơi với AI, playerOne = True, ngược lại playerOne = False
+    playerTwo = False  # Nếu chơi với AI, playerTwo = True, ngược lại playerTwo = False
+
     move_sound = p.mixer.Sound('./audio/move-self.mp3')
     capture_sound = p.mixer.Sound('./audio/capture.mp3')
 
     while running:
+        human_turn = (game_state.whiteToMove and playerOne) or (not game_state.whiteToMove and playerTwo)
         for event in p.event.get():
             if event.type == p.QUIT:
                 running = False
             elif event.type == p.MOUSEBUTTONDOWN:
-                if not game_over:
+                if not game_over and human_turn:
                     location = p.mouse.get_pos()
 
                     # Do trục X nằm ngang => Tìm index của column, row
@@ -98,7 +103,16 @@ def main():
                     player_clicks = []
                     move_made = False
                     animate = False
-            
+        
+        # AI move finder
+        if not game_over and not human_turn:
+            AIMove = smd.find_best_move(game_state, valid_moves)
+            if AIMove is None:
+                AIMove = smd.find_random_move(valid_moves)
+            game_state.makeMove(AIMove)
+            move_made = True
+            animate = True
+
         if move_made:
             if animate:
                 animateMove(game_state.moveLog[-1], screen, game_state, clock)
