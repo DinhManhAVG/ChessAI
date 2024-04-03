@@ -1,5 +1,6 @@
 import pygame as p
 import ChessEngine, SmartMoveFinder as smd
+from multiprocessing import Process, Queue
 
 WIDTH = HEIGHT = 512
 DIMENSION = 8
@@ -31,7 +32,7 @@ def main():
     screen.fill(p.Color("white"))
 
     game_state = ChessEngine.GameState()
-    valid_moves = game_state.getValidMoves()
+    valid_moves = game_state.getValidMoves_2()
     move_made = False # Biến cờ trạng thái khi thực hiện 1 nước đi
     animate = False # Biến cờ trạng thái khi thực hiện animation
 
@@ -43,8 +44,11 @@ def main():
     game_over = False
     # playerOne là người chơi quân trắng và playerTwo là người chơi quân đen
     # Nếu cái nào là False thì là AI chơi còn True là người chơi
-    playerOne = False  # Nếu chơi với AI, playerOne = True, ngược lại playerOne = False
+    playerOne = True  # Nếu chơi với AI, playerOne = True, ngược lại playerOne = False
     playerTwo = False  # Nếu chơi với AI, playerTwo = True, ngược lại playerTwo = False
+    AIThinking = False
+    moveFinderProcess = None # Process để tìm nước đi tốt nhất cho AI
+    moveUndone = False
 
     move_sound = p.mixer.Sound('./audio/move-self.mp3')
     capture_sound = p.mixer.Sound('./audio/capture.mp3')
@@ -97,31 +101,49 @@ def main():
                     move_made = True
                     animate = False
                     game_over = False
+                    if AIThinking:
+                        moveFinderProcess.terminate()
+                        AIThinking = False
+                    moveUndone = True
                 if event.key == p.K_r: # Nhấn phím R để reset game
                     game_state = ChessEngine.GameState()
-                    valid_moves = game_state.getValidMoves()
+                    valid_moves = game_state.getValidMoves_2()
                     sq_selected = ()
                     player_clicks = []
                     move_made = False
                     animate = False
                     game_over = False
+                    if AIThinking:
+                        moveFinderProcess.terminate()
+                        AIThinking = False
+                    moveUndone = True
         
         # AI move finder
-        if not game_over and not human_turn:
-            # AIMove = smd.find_best_move(game_state, valid_moves)
-            AIMove = smd.find_best_move_minimax(game_state, valid_moves)
-            if AIMove is None:
-                AIMove = smd.find_random_move(valid_moves)
-            game_state.makeMove(AIMove)
-            move_made = True
-            animate = True
+        if not game_over and not human_turn and not moveUndone:
+            if not AIThinking:
+                AIThinking = True
+                print("AI is thinking...")
+                returnQueue = Queue() # Sử dụng Queue để truyền dữ liệu giữa các process
+                moveFinderProcess = Process(target=smd.find_best_move_minimax, args=(game_state, valid_moves, returnQueue))
+                moveFinderProcess.start() # Bắt đầu process goi hàm find_best_move_minimax
+            if not moveFinderProcess.is_alive(): # Kiểm tra xem process đã kết thúc chưa
+                print("AI move found")
+                AIMove = returnQueue.get()
+                if AIMove is None:
+                    AIMove = smd.find_random_move(valid_moves)
+                game_state.makeMove(AIMove)
+                move_made = True
+                animate = True
+                AIThinking = False
 
         if move_made:
             if animate:
                 animateMove(game_state.moveLog[-1], screen, game_state, clock)
-            valid_moves = game_state.getValidMoves()
+            valid_moves = game_state.getValidMoves_2()
             move_made = False
             animate = False
+            moveUndone = False
+
         draw_game_state(screen, game_state, valid_moves, sq_selected)
 
         if game_state.checkMate:
@@ -132,7 +154,8 @@ def main():
                 drawText(screen, "White wins by checkmate")
         elif game_state.staleMate:
             game_over = True
-            drawText(screen, "Stalemate")
+            stringWin = "Black wins by stalemate" if game_state.whiteToMove else "White wins by stalemate"
+            drawText(screen, stringWin)
         # Điều chỉnh tốc độ của khung hinh
         # Đảm bảo rằng mỗi lần vòng lặp thực hiện, thời gian giữa các khung hình liên tiếp sẽ ít nhất là 1/MAX_FPS giây.
         clock.tick(MAX_FPS)

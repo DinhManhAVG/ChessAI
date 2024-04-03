@@ -15,8 +15,8 @@ class GameState:
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
         ]
-        self.moveFunctions = { 'p': self.getPawnMoves, 'R': self.getRookMoves, 'N': self.getKnightMoves,
-                               'B': self.getBishopMoves, 'Q': self.getQueenMoves, 'K': self.getKingMoves}
+        self.moveFunctions = { 'p': self.getPawnMoves_2, 'R': self.getRookMoves_2, 'N': self.getKnightMoves_2,
+                               'B': self.getBishopMoves_2, 'Q': self.getQueenMoves_2, 'K': self.getKingMoves_2}
 
         self.whiteToMove = True
 
@@ -29,14 +29,15 @@ class GameState:
 
         ### Advanced algorithm
         # Kiểm tra xem vua có bị tấn công không
-        # self.inCheck = False
+        self.inCheck = False
         # pins là danh sách các quân đang bị chặn
-        # self.pins = []
+        self.pins = []
         ###
 
         # checks là danh sách các quân đang tấn công vua
         self.checks = []
         self.enpassantPossible = () # Ô mà quân tốt có thể ăn quân tốt đối phương
+        self.enpassantPossibleLog = [self.enpassantPossible]
         self.currentCastlingRight = CastleRights(True, True, True, True)
         self.castleRightsLog = [CastleRights(self.currentCastlingRight.wks, self.currentCastlingRight.bks,
                                              self.currentCastlingRight.wqs, self.currentCastlingRight.bqs)]
@@ -76,7 +77,9 @@ class GameState:
                 self.board[move.endRow][move.endColumn + 1] = self.board[move.endRow][move.endColumn - 2]
                 self.board[move.endRow][move.endColumn - 2] = "--"
 
-        
+        self.enpassantPossibleLog.append(self.enpassantPossible)
+
+
         # Cập nhật castling rights - Bất kể khi nào vua hoặc xe di chuyển
         self.updateCastlingRights(move)
         self.castleRightsLog.append(CastleRights(self.currentCastlingRight.wks, self.currentCastlingRight.bks,
@@ -98,10 +101,15 @@ class GameState:
             if move.isEnpassantMove:
                 self.board[move.endRow][move.endColumn] = "--" # Đặt lại ô trống
                 self.board[move.startRow][move.endColumn] = move.pieceCaptured
-                self.enpassantPossible = (move.endRow, move.endColumn)
+                # TODO
+                # self.enpassantPossible = (move.endRow, move.endColumn)
             # undo 2 ô di chuyển của con tốt
-            if move.pieceMoved[1] == 'p' and abs(move.startRow - move.endRow) == 2:
-                self.enpassantPossible = ()
+            # if move.pieceMoved[1] == 'p' and abs(move.startRow - move.endRow) == 2:
+                # self.enpassantPossible = ()
+            
+            # Adding
+            self.enpassantPossibleLog.pop()
+            self.enpassantPossible = self.enpassantPossibleLog[-1]
             
             # undo a castling move
             self.castleRightsLog.pop() # Loại bỏ quyền castling cuối cùng
@@ -360,6 +368,8 @@ class GameState:
     # Advanced algorithm
 
     def getValidMoves_2(self):
+        temp_castle_rights = CastleRights(self.currentCastlingRight.wks, self.currentCastlingRight.bks,
+                                          self.currentCastlingRight.wqs, self.currentCastlingRight.bqs)
         # Sinh ra tất cả nước đi có thể
         moves = []
         self.inCheck, self.pins, self.checks = self.checkForPinsAndChecks()
@@ -403,6 +413,10 @@ class GameState:
         else:
             # Nếu không bị chiếu thì tất cả các nước đi hợp lệ
             moves = self.getAllPossibleMoves()
+            if self.whiteToMove:
+                self.getCastleMoves(self.whiteKingLocation[0], self.whiteKingLocation[1], moves)
+            else:
+                self.getCastleMoves(self.blackKingLocation[0], self.blackKingLocation[1], moves)
 
         if len(moves) == 0: # Không có nước đi hợp lệ nào
             if self.inCheck:
@@ -414,6 +428,7 @@ class GameState:
         else:
             self.checkMate = False
             self.staleMate = False
+        self.currentCastlingRight = temp_castle_rights
         return moves
 
     def checkForPinsAndChecks(self):
