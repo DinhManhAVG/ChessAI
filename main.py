@@ -96,6 +96,7 @@ def main():
                     game_state.undoMove()
                     move_made = True
                     animate = False
+                    game_over = False
                 if event.key == p.K_r: # Nhấn phím R để reset game
                     game_state = ChessEngine.GameState()
                     valid_moves = game_state.getValidMoves()
@@ -103,10 +104,12 @@ def main():
                     player_clicks = []
                     move_made = False
                     animate = False
+                    game_over = False
         
         # AI move finder
         if not game_over and not human_turn:
-            AIMove = smd.find_best_move(game_state, valid_moves)
+            # AIMove = smd.find_best_move(game_state, valid_moves)
+            AIMove = smd.find_best_move_minimax(game_state, valid_moves)
             if AIMove is None:
                 AIMove = smd.find_random_move(valid_moves)
             game_state.makeMove(AIMove)
