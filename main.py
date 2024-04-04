@@ -42,6 +42,7 @@ def main():
     sq_selected = ()  # Lưu trữ click cuối cùng of người chơi
     player_clicks = []  # Lưu giữ click của người dùng (click đầu, và cuối khi chọn 1 ô)
     game_over = False
+
     # playerOne là người chơi quân trắng và playerTwo là người chơi quân đen
     # Nếu cái nào là False thì là AI chơi còn True là người chơi
     playerOne = True  # Nếu chơi với AI, playerOne = True, ngược lại playerOne = False
@@ -82,7 +83,7 @@ def main():
 
                         for i in range(len(valid_moves)):
                             if move == valid_moves[i]:
-                                if move.pieceCaptured != "--" or (move.endRow, move.endColumn) == game_state.enpassantPossible:
+                                if move.pieceCaptured != "--" or (move.endRow, move.endColumn) == game_state.enPassantPossible:
                                     capture_sound.play()
                                 else:
                                     move_sound.play()
@@ -93,6 +94,7 @@ def main():
                                 player_clicks = []
                         if not move_made:
                             player_clicks = [sq_selected]
+
             # Xử lý event key handlers
             elif event.type == p.KEYDOWN:
                 # Nhấn phím Z
@@ -124,13 +126,19 @@ def main():
                 AIThinking = True
                 print("AI is thinking...")
                 returnQueue = Queue() # Sử dụng Queue để truyền dữ liệu giữa các process
+                # moveFinderProcess = Process(target=smd.find_best_move_minimax_without_ab, args=(game_state, valid_moves, returnQueue))
                 moveFinderProcess = Process(target=smd.find_best_move_minimax, args=(game_state, valid_moves, returnQueue))
                 moveFinderProcess.start() # Bắt đầu process goi hàm find_best_move_minimax
+            
             if not moveFinderProcess.is_alive(): # Kiểm tra xem process đã kết thúc chưa
                 print("AI move found")
                 AIMove = returnQueue.get()
                 if AIMove is None:
                     AIMove = smd.find_random_move(valid_moves)
+                if AIMove.pieceCaptured != "--" or (AIMove.endRow, AIMove.endColumn) == game_state.enPassantPossible:
+                    capture_sound.play()
+                else:
+                    move_sound.play()
                 game_state.makeMove(AIMove)
                 move_made = True
                 animate = True
@@ -156,6 +164,7 @@ def main():
             game_over = True
             stringWin = "Black wins by stalemate" if game_state.whiteToMove else "White wins by stalemate"
             drawText(screen, stringWin)
+
         # Điều chỉnh tốc độ của khung hinh
         # Đảm bảo rằng mỗi lần vòng lặp thực hiện, thời gian giữa các khung hình liên tiếp sẽ ít nhất là 1/MAX_FPS giây.
         clock.tick(MAX_FPS)
@@ -184,6 +193,24 @@ def highlight_squares(screen, game_state, valid_moves, sq_selected):
                         s, (move.endColumn * SQ_SIZE, move.endRow * SQ_SIZE)
                     )
 
+def highlight_inCheck_king(screen, game_state):
+    # Tô cảnh báo màu đỏ cho quân vua trên bàn cờ đội địch nếu bị đang inCheck
+    if game_state.inCheck:
+        if game_state.whiteToMove:
+            # Highlight màu đỏ tại quân vua của đội trắng
+            white_king_location = game_state.whiteKingLocation
+            s = p.Surface((SQ_SIZE, SQ_SIZE), p.SRCALPHA)
+            s.fill(p.Color(255, 0, 0, 100))
+            screen.blit(s, (white_king_location[1] * SQ_SIZE, white_king_location[0] * SQ_SIZE))
+            screen.blit(IMAGES["wK"], (white_king_location[1] * SQ_SIZE, white_king_location[0] * SQ_SIZE))
+        else:
+            # Highlight màu đỏ tại quân vua của đội đen
+            black_king_location = game_state.blackKingLocation
+            s = p.Surface((SQ_SIZE, SQ_SIZE), p.SRCALPHA)
+            s.fill(p.Color(255, 0, 0, 100))
+            screen.blit(s, (black_king_location[1] * SQ_SIZE, black_king_location[0] * SQ_SIZE))
+            screen.blit(IMAGES["bK"], (black_king_location[1] * SQ_SIZE, black_king_location[0] * SQ_SIZE))
+
 def animateMove(move, screen, game_state, clock):
     global colors
     coords = []  # List chứa các tọa độ của các ô cần di chuyển
@@ -197,11 +224,12 @@ def animateMove(move, screen, game_state, clock):
         draw_pieces(screen, game_state.board)
         # Xóa quân cờ tại ô cũ
         color = colors[(move.endRow + move.endColumn) % 2]
-        endSqaure = p.Rect(move.endColumn * SQ_SIZE, move.endRow * SQ_SIZE, SQ_SIZE, SQ_SIZE)
-        p.draw.rect(screen, color, endSqaure)
+        endSquare = p.Rect(move.endColumn * SQ_SIZE, move.endRow * SQ_SIZE, SQ_SIZE, SQ_SIZE)
+        p.draw.rect(screen, color, endSquare)
         # Vẽ quân cờ tại ô mới
         if move.pieceCaptured != "--":
-            screen.blit(IMAGES[move.pieceCaptured], endSqaure)
+            screen.blit(IMAGES[move.pieceCaptured], endSquare)
+        
         # Vẽ quân cờ di chuyển
         screen.blit(IMAGES[move.pieceMoved], p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
         p.display.flip()
@@ -263,6 +291,7 @@ def draw_game_state(screen, game_state, valid_moves, sq_selected):
     draw_board(screen)  # Vẽ bàn cờ
     draw_pieces(screen, game_state.board)  # Vẽ các quân cờ vào
     highlight_squares(screen, game_state, valid_moves, sq_selected)  # Vẽ ô đã chọn và các ô có thể di chuyển
+    highlight_inCheck_king(screen, game_state)  # Highlight quân vua nếu bị chiếu
 
 if __name__ == "__main__":
     main()

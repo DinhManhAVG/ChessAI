@@ -8,6 +8,7 @@ piece_score = {
     "N": 3,
     "p": 1,
 }
+
 # Mảng này dùng để đánh giá vị trí của quân cờ trên bàn cờ để ưu tiên quân cờ đi vào vị trí có điểm cao hơn
 knight_scores = [[0.0, 0.1, 0.2, 0.2, 0.2, 0.2, 0.1, 0.0],
                  [0.1, 0.3, 0.5, 0.5, 0.5, 0.5, 0.3, 0.1],
@@ -149,28 +150,35 @@ def find_best_move(gs, valid_moves):
         gs.undoMove()
     return  best_player_move
 
-# def find_best_move_minimax(gs, valid_moves):
-#     """
-#     Phương pháp giúp gọi đệ quy lần đầu tiên
-#     """
-#     print("find_best_move_minimax")
-#     global next_move
-#     next_move = None
+def find_best_move_minimax_without_ab(gs, valid_moves, returnQueue):
+    """
+    Phương pháp giúp gọi đệ quy lần đầu tiên
+    """
+    print("find_best_move_minimax without alpha beta")
+    global next_move, moving_count
+    next_move = None
+    moving_count = 0
 
-#     find_move_minimax(gs, valid_moves, DEPTH, gs.whiteToMove)
-#     return next_move
+    find_move_minimax(gs, valid_moves, DEPTH, gs.whiteToMove,0, 0)
+    returnQueue.put(next_move)
+    print("Moving count: ", moving_count)
+    return next_move
 
 
 def find_best_move_minimax(gs, valid_moves, returnQueue):
-    global next_move
+    global next_move, moving_count
     next_move = None
     alpha = -CHECKMATE
     beta = CHECKMATE
-    find_move_minimax(gs, valid_moves, DEPTH, gs.whiteToMove, alpha, beta)
+    
+    moving_count = 0
+    find_move_minimax(gs, valid_moves, DEPTH, gs.whiteToMove, alpha, beta, is_apply_alpha_beta=True)
+    print("Moving count: ", moving_count)
     returnQueue.put(next_move)
 
-def find_move_minimax(gs, valid_moves, depth, white_to_move, alpha, beta):
-    global next_move
+def find_move_minimax(gs, valid_moves, depth, white_to_move, alpha, beta, is_apply_alpha_beta=False):
+    global next_move, moving_count
+    moving_count += 1
     if depth == 0:
         return score_material(gs.board)
     
@@ -179,28 +187,31 @@ def find_move_minimax(gs, valid_moves, depth, white_to_move, alpha, beta):
         for move in valid_moves:
             gs.makeMove(move)
             next_moves = gs.getValidMoves_2()
-            score = find_move_minimax(gs, next_moves, depth - 1, False, alpha, beta)
+            score = find_move_minimax(gs, next_moves, depth - 1, False, alpha, beta, is_apply_alpha_beta)
             if score > max_score:
                 max_score = score
                 if depth == DEPTH:
                     next_move = move
             gs.undoMove()
-            alpha = max(alpha, score)
-            if beta <= alpha:
-                break  # beta cut-off
+
+            if is_apply_alpha_beta:
+                alpha = max(alpha, score)
+                if beta <= alpha:
+                    break  # beta cut-off
         return max_score
     else:
         min_score = CHECKMATE
         for move in valid_moves:
             gs.makeMove(move)
             next_moves = gs.getValidMoves_2()
-            score = find_move_minimax(gs, next_moves, depth - 1, True, alpha, beta)
+            score = find_move_minimax(gs, next_moves, depth - 1, True, alpha, beta, is_apply_alpha_beta)
             if score < min_score:
                 min_score = score
                 if depth == DEPTH:
                     next_move = move
             gs.undoMove()
-            beta = min(beta, score)
-            if beta <= alpha:
-                break  # alpha cut-off
+            if is_apply_alpha_beta:
+                beta = min(beta, score)
+                if beta <= alpha:
+                    break  # alpha cut-off
         return min_score

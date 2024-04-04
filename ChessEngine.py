@@ -30,14 +30,14 @@ class GameState:
         ### Advanced algorithm
         # Kiểm tra xem vua có bị tấn công không
         self.inCheck = False
+
         # pins là danh sách các quân đang bị chặn
         self.pins = []
-        ###
 
         # checks là danh sách các quân đang tấn công vua
         self.checks = []
-        self.enpassantPossible = () # Ô mà quân tốt có thể ăn quân tốt đối phương
-        self.enpassantPossibleLog = [self.enpassantPossible]
+        self.enPassantPossible = () # Ô mà quân tốt có thể ăn quân tốt đối phương
+        self.enPassantPossibleLog = [self.enPassantPossible]
         self.currentCastlingRight = CastleRights(True, True, True, True)
         self.castleRightsLog = [CastleRights(self.currentCastlingRight.wks, self.currentCastlingRight.bks,
                                              self.currentCastlingRight.wqs, self.currentCastlingRight.bqs)]
@@ -64,9 +64,9 @@ class GameState:
 
         # Cập nhật lại vị trí quân tốt đối phương
         if move.pieceMoved[1] == 'p' and abs(move.startRow - move.endRow) == 2: # Chỉ khi con tốt di chuyển 2 ô ở vị trí ban đầu
-            self.enpassantPossible = ((move.startRow + move.endRow) // 2, move.startColumn)
+            self.enPassantPossible = ((move.startRow + move.endRow) // 2, move.startColumn)
         else:
-            self.enpassantPossible = ()
+            self.enPassantPossible = ()
 
         # castling move
         if move.isCastleMove:
@@ -77,7 +77,7 @@ class GameState:
                 self.board[move.endRow][move.endColumn + 1] = self.board[move.endRow][move.endColumn - 2]
                 self.board[move.endRow][move.endColumn - 2] = "--"
 
-        self.enpassantPossibleLog.append(self.enpassantPossible)
+        self.enPassantPossibleLog.append(self.enPassantPossible)
 
 
         # Cập nhật castling rights - Bất kể khi nào vua hoặc xe di chuyển
@@ -102,14 +102,14 @@ class GameState:
                 self.board[move.endRow][move.endColumn] = "--" # Đặt lại ô trống
                 self.board[move.startRow][move.endColumn] = move.pieceCaptured
                 # TODO
-                # self.enpassantPossible = (move.endRow, move.endColumn)
+                # self.enPassantPossible = (move.endRow, move.endColumn)
             # undo 2 ô di chuyển của con tốt
             # if move.pieceMoved[1] == 'p' and abs(move.startRow - move.endRow) == 2:
-                # self.enpassantPossible = ()
+                # self.enPassantPossible = ()
             
             # Adding
-            self.enpassantPossibleLog.pop()
-            self.enpassantPossible = self.enpassantPossibleLog[-1]
+            self.enPassantPossibleLog.pop()
+            self.enPassantPossible = self.enPassantPossibleLog[-1]
             
             # undo a castling move
             self.castleRightsLog.pop() # Loại bỏ quyền castling cuối cùng
@@ -154,7 +154,7 @@ class GameState:
                     self.currentCastlingRight.bks = False
             
     def getValidMoves(self):
-        temp_enpassant_possible = self.enpassantPossible
+        temp_enpassant_possible = self.enPassantPossible
         temp_castle_rights = CastleRights(self.currentCastlingRight.wks, self.currentCastlingRight.bks,
                                             self.currentCastlingRight.wqs, self.currentCastlingRight.bqs)
         # Sinh ra tất cả nước đi có thể
@@ -170,12 +170,12 @@ class GameState:
 
             # Mỗi nước đi đối thủ, nếu họ tấn công vua
             self.whiteToMove = not self.whiteToMove
-            if self.inCheck():
+            if self.inCheckFunction():
                 moves.remove(moves[i]) # Nếu họ có thể tấn công vua thì nước đi đó không hợp lệ
             self.whiteToMove = not self.whiteToMove
             self.undoMove()
         if len(moves) == 0: # Không có nước đi hợp lệ nào
-            if self.inCheck():
+            if self.inCheckFunction():
                 self.checkMate = True
                 print("Check mate")
             else:
@@ -184,11 +184,11 @@ class GameState:
         else:
             self.checkMate = False
             self.staleMate = False
-        self.enpassantPossible = temp_enpassant_possible
+        self.enPassantPossible = temp_enpassant_possible
         self.currentCastlingRight = temp_castle_rights
         return moves
 
-    def inCheck(self):
+    def inCheckFunction(self):
         """
         Xác định người chơi hiện tại đang được check
         """
@@ -233,12 +233,12 @@ class GameState:
             if col-1 >= 0: # Di Chuyển về  bên trái
                 if self.board[row - 1][col - 1][0] == 'b': # Ăn quân đen bên trái
                     moves.append(Move((row, col), (row-1, col-1), self.board))
-                elif (row - 1, col - 1) == self.enpassantPossible:
+                elif (row - 1, col - 1) == self.enPassantPossible:
                     moves.append(Move((row, col), (row-1, col-1), self.board, isEnpassantMove = True))
             if col+1 <= 7: # Di Chuyển về  bên phải
                 if self.board[row - 1][col + 1][0] == 'b': # Ăn quân đen bên phải
                     moves.append(Move((row, col), (row-1, col+1), self.board))
-                elif (row - 1, col + 1) == self.enpassantPossible:
+                elif (row - 1, col + 1) == self.enPassantPossible:
                     moves.append(Move((row, col), (row-1, col+1), self.board, isEnpassantMove = True))
         else:
             if self.board[row + 1][col] == "--": # Con tốt đi xuống 1 nước
@@ -248,12 +248,12 @@ class GameState:
             if col - 1 >= 0: # Di Chuyển về  bên trái
                 if self.board[row + 1][col - 1][0] == 'w': # Ăn quân đen bên trái
                     moves.append(Move((row, col), (row + 1, col - 1), self.board))
-                elif (row + 1, col - 1) == self.enpassantPossible:
+                elif (row + 1, col - 1) == self.enPassantPossible:
                     moves.append(Move((row, col), (row + 1, col - 1), self.board, isEnpassantMove = True))
             if col + 1 <= 7: # Di Chuyển về  bên phải
                 if self.board[row + 1][col + 1][0] == 'w': # Ăn quân đen bên phải
                     moves.append(Move((row, col), (row + 1, col + 1), self.board))
-                elif (row + 1, col + 1) == self.enpassantPossible:
+                elif (row + 1, col + 1) == self.enPassantPossible:
                     moves.append(Move((row, col), (row + 1, col + 1), self.board, isEnpassantMove = True))
 
     def getRookMoves(self, row, col, moves):
@@ -532,14 +532,14 @@ class GameState:
                     # Nếu không là quân chặn hoặc là quân chặn nhưng chặn theo hướng chéo trái thì việc di chuyển theo hướng chéo trái là hợp lệ
                     if not piece_pinned or pin_direction == (-1, -1):
                         moves.append(Move((row, col), (row-1, col-1), self.board))
-                    elif (row - 1, col - 1) == self.enpassantPossible:
+                    elif (row - 1, col - 1) == self.enPassantPossible:
                         moves.append(Move((row, col), (row-1, col-1), self.board, isEnpassantMove = True))
             if col+1 <= 7: # Di Chuyển về hướng chéo bên phải
                 if self.board[row - 1][col + 1][0] == 'b': # Ăn quân đen bên phải
                     # Nếu không là quân chặn hoặc là quân chặn nhưng chặn theo hướng chéo phải thì việc di chuyển theo hướng chéo phải là hợp lệ
                     if not piece_pinned or pin_direction == (-1, 1):
                         moves.append(Move((row, col), (row-1, col+1), self.board))
-                    elif (row - 1, col + 1) == self.enpassantPossible:
+                    elif (row - 1, col + 1) == self.enPassantPossible:
                         moves.append(Move((row, col), (row-1, col+1), self.board, isEnpassantMove = True))
         else:
             if self.board[row + 1][col] == "--": # Con tốt đi xuống 1 nước
@@ -551,13 +551,13 @@ class GameState:
                 if self.board[row + 1][col - 1][0] == 'w': # Ăn quân đen bên trái
                     if not piece_pinned or pin_direction == (1, -1):
                         moves.append(Move((row, col), (row + 1, col - 1), self.board))
-                    elif (row + 1, col - 1) == self.enpassantPossible:
+                    elif (row + 1, col - 1) == self.enPassantPossible:
                         moves.append(Move((row, col), (row + 1, col - 1), self.board, isEnpassantMove = True))
             if col + 1 <= 7: # Di Chuyển về  bên phải
                 if self.board[row + 1][col + 1][0] == 'w': # Ăn quân đen bên phải
                     if not piece_pinned or pin_direction == (1, 1):
                         moves.append(Move((row, col), (row + 1, col + 1), self.board))
-                    elif (row + 1, col + 1) == self.enpassantPossible:
+                    elif (row + 1, col + 1) == self.enPassantPossible:
                         moves.append(Move((row, col), (row + 1, col + 1), self.board, isEnpassantMove = True))
 
     def getRookMoves_2(self, row, col, moves):
