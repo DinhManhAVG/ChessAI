@@ -98,7 +98,7 @@ def main():
             # Xử lý event key handlers
             elif event.type == py.KEYDOWN:
                 # Nhấn phím Z
-                if event.mod & py.KMOD_CTRL and event.key == p.K_z:
+                if event.mod & py.KMOD_CTRL and event.key == py.K_z:
                     game_state.undoMove()
                     move_made = True
                     animate = False
@@ -181,12 +181,12 @@ def highlight_squares(screen, game_state, valid_moves, sq_selected):
         row, column = sq_selected
         if game_state.board[row][column][0] == ("w" if game_state.whiteToMove else "b"):
             # Vẽ hình chữ nhật xanh lá cây cho ô đã chọn
-            s = p.Surface((SQ_SIZE, SQ_SIZE))
+            s = py.Surface((SQ_SIZE, SQ_SIZE))
             s.set_alpha(100)  # Độ trong suốt
-            s.fill(p.Color("blue"))
+            s.fill(py.Color("blue"))
             screen.blit(s, (column * SQ_SIZE, row * SQ_SIZE))
             # Vẽ các nước đi hợp lệ
-            s.fill(p.Color("yellow"))
+            s.fill(py.Color("yellow"))
             for move in valid_moves:
                 if move.startRow == row and move.startColumn == column:
                     screen.blit(
