@@ -43,19 +43,19 @@ def main():
     player_clicks = []  # Lưu giữ click của người dùng (click đầu, và cuối khi chọn 1 ô)
     game_over = False
 
-    # playerOne là người chơi quân trắng và playerTwo là người chơi quân đen
+    # player_one là người chơi quân trắng và player_two là người chơi quân đen
     # Nếu cái nào là False thì là AI chơi còn True là người chơi
-    playerOne = True  # Nếu chơi với AI, playerOne = True, ngược lại playerOne = False
-    playerTwo = False  # Nếu chơi với AI, playerTwo = True, ngược lại playerTwo = False
-    AIThinking = False
-    moveFinderProcess = None # Process để tìm nước đi tốt nhất cho AI
-    moveUndone = False
+    player_one = True  # Nếu chơi với AI, player_one = True, ngược lại player_one = False
+    player_two = False  # Nếu chơi với AI, player_two = True, ngược lại player_two = False
+    ai_thinking = False
+    move_finder_process = None # Process để tìm nước đi tốt nhất cho AI
+    move_undone = False
 
     move_sound = p.mixer.Sound('./audio/move-self.mp3')
     capture_sound = p.mixer.Sound('./audio/capture.mp3')
 
     while running:
-        human_turn = (game_state.whiteToMove and playerOne) or (not game_state.whiteToMove and playerTwo)
+        human_turn = (game_state.whiteToMove and player_one) or (not game_state.whiteToMove and player_two)
         for event in p.event.get():
             if event.type == p.QUIT:
                 running = False
@@ -103,10 +103,10 @@ def main():
                     move_made = True
                     animate = False
                     game_over = False
-                    if AIThinking:
-                        moveFinderProcess.terminate()
-                        AIThinking = False
-                    moveUndone = True
+                    if ai_thinking:
+                        move_finder_process.terminate()
+                        ai_thinking = False
+                    move_undone = True
                 if event.key == p.K_r: # Nhấn phím R để reset game
                     game_state = ChessEngine.GameState()
                     valid_moves = game_state.getValidMoves_2()
@@ -115,55 +115,55 @@ def main():
                     move_made = False
                     animate = False
                     game_over = False
-                    if AIThinking:
-                        moveFinderProcess.terminate()
-                        AIThinking = False
-                    moveUndone = True
+                    if ai_thinking:
+                        move_finder_process.terminate()
+                        ai_thinking = False
+                    move_undone = True
         
         # AI move finder
-        if not game_over and not human_turn and not moveUndone:
-            if not AIThinking:
-                AIThinking = True
+        if not game_over and not human_turn and not move_undone:
+            if not ai_thinking:
+                ai_thinking = True
                 print("AI is thinking...")
-                returnQueue = Queue() # Sử dụng Queue để truyền dữ liệu giữa các process
-                # moveFinderProcess = Process(target=smd.find_best_move_minimax_without_ab, args=(game_state, valid_moves, returnQueue))
-                moveFinderProcess = Process(target=smd.find_best_move_minimax, args=(game_state, valid_moves, returnQueue))
-                moveFinderProcess.start() # Bắt đầu process goi hàm find_best_move_minimax
+                return_queue = Queue() # Sử dụng Queue để truyền dữ liệu giữa các process
+                # move_finder_process = Process(target=smd.find_best_move_minimax_without_ab, args=(game_state, valid_moves, return_queue))
+                move_finder_process = Process(target=smd.find_best_move_minimax, args=(game_state, valid_moves, return_queue))
+                move_finder_process.start() # Bắt đầu process goi hàm find_best_move_minimax
             
-            if not moveFinderProcess.is_alive(): # Kiểm tra xem process đã kết thúc chưa
+            if not move_finder_process.is_alive(): # Kiểm tra xem process đã kết thúc chưa
                 print("AI move found")
-                AIMove = returnQueue.get()
-                if AIMove is None:
-                    AIMove = smd.find_random_move(valid_moves)
-                if AIMove.pieceCaptured != "--" or (AIMove.endRow, AIMove.endColumn) == game_state.enPassantPossible:
+                ai_move = return_queue.get()
+                if ai_move is None:
+                    ai_move = smd.find_random_move(valid_moves)
+                if ai_move.pieceCaptured != "--" or (ai_move.endRow, ai_move.endColumn) == game_state.enPassantPossible:
                     capture_sound.play()
                 else:
                     move_sound.play()
-                game_state.makeMove(AIMove)
+                game_state.makeMove(ai_move)
                 move_made = True
                 animate = True
-                AIThinking = False
+                ai_thinking = False
 
         if move_made:
             if animate:
-                animateMove(game_state.moveLog[-1], screen, game_state, clock)
+                animate_move(game_state.moveLog[-1], screen, game_state, clock)
             valid_moves = game_state.getValidMoves_2()
             move_made = False
             animate = False
-            moveUndone = False
+            move_undone = False
 
         draw_game_state(screen, game_state, valid_moves, sq_selected)
 
         if game_state.checkMate:
             game_over = True
             if game_state.whiteToMove:
-                drawText(screen, "Black wins by checkmate")
+                draw_text(screen, "Black wins by checkmate")
             else:
-                drawText(screen, "White wins by checkmate")
+                draw_text(screen, "White wins by checkmate")
         elif game_state.staleMate:
             game_over = True
-            stringWin = "Black wins by stalemate" if game_state.whiteToMove else "White wins by stalemate"
-            drawText(screen, stringWin)
+            string_win = "Black wins by stalemate" if game_state.whiteToMove else "White wins by stalemate"
+            draw_text(screen, string_win)
 
         # Điều chỉnh tốc độ của khung hinh
         # Đảm bảo rằng mỗi lần vòng lặp thực hiện, thời gian giữa các khung hình liên tiếp sẽ ít nhất là 1/MAX_FPS giây.
@@ -193,7 +193,7 @@ def highlight_squares(screen, game_state, valid_moves, sq_selected):
                         s, (move.endColumn * SQ_SIZE, move.endRow * SQ_SIZE)
                     )
 
-def highlight_inCheck_king(screen, game_state):
+def highlight_in_check_king(screen, game_state):
     # Tô cảnh báo màu đỏ cho quân vua trên bàn cờ đội địch nếu bị đang inCheck
     if game_state.inCheck:
         if game_state.whiteToMove:
@@ -211,37 +211,36 @@ def highlight_inCheck_king(screen, game_state):
             screen.blit(s, (black_king_location[1] * SQ_SIZE, black_king_location[0] * SQ_SIZE))
             screen.blit(IMAGES["bK"], (black_king_location[1] * SQ_SIZE, black_king_location[0] * SQ_SIZE))
 
-def animateMove(move, screen, game_state, clock):
+def animate_move(move, screen, game_state, clock):
     global colors
-    coords = []  # List chứa các tọa độ của các ô cần di chuyển
-    dR = move.endRow - move.startRow
-    dC = move.endColumn - move.startColumn
-    framesPerSquare = 10  # Frames để di chuyển 1 ô
-    frameCount = (abs(dR) + abs(dC)) * framesPerSquare
-    for frame in range(frameCount + 1):
-        r, c = (move.startRow + dR * frame / frameCount, move.startColumn + dC * frame / frameCount)
+    delta_row = move.endRow - move.startRow
+    delta_column = move.endColumn - move.startColumn
+    frames_per_square = 10  # Frames để di chuyển 1 ô
+    frame_count = (abs(delta_row) + abs(delta_column)) * frames_per_square
+    for frame in range(frame_count + 1):
+        r, c = (move.startRow + delta_row * frame / frame_count, move.startColumn + delta_column * frame / frame_count)
         draw_board(screen)
         draw_pieces(screen, game_state.board)
         # Xóa quân cờ tại ô cũ
         color = colors[(move.endRow + move.endColumn) % 2]
-        endSquare = p.Rect(move.endColumn * SQ_SIZE, move.endRow * SQ_SIZE, SQ_SIZE, SQ_SIZE)
-        p.draw.rect(screen, color, endSquare)
+        end_square = p.Rect(move.endColumn * SQ_SIZE, move.endRow * SQ_SIZE, SQ_SIZE, SQ_SIZE)
+        p.draw.rect(screen, color, end_square)
         # Vẽ quân cờ tại ô mới
         if move.pieceCaptured != "--":
-            screen.blit(IMAGES[move.pieceCaptured], endSquare)
+            screen.blit(IMAGES[move.pieceCaptured], end_square)
         
         # Vẽ quân cờ di chuyển
         screen.blit(IMAGES[move.pieceMoved], p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
         p.display.flip()
         clock.tick(120)
 
-def drawText(screen, text):
+def draw_text(screen, text):
     font = p.font.SysFont("Helvitca", 50, True, False)
-    textObject = font.render(text, 0, p.Color("Gray"))
-    textLocation = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH / 2 - textObject.get_width() / 2, HEIGHT / 2 - textObject.get_height() / 2)
-    screen.blit(textObject, textLocation)
-    textObject = font.render(text, 0, p.Color("Black"))
-    screen.blit(textObject, textLocation.move(2, 2))
+    text_object = font.render(text, 0, p.Color("Gray"))
+    text_location = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH / 2 - text_object.get_width() / 2, HEIGHT / 2 - text_object.get_height() / 2)
+    screen.blit(text_object, text_location)
+    text_object = font.render(text, 0, p.Color("Black"))
+    screen.blit(text_object, text_location.move(2, 2))
 
 def draw_board(screen):
     """
@@ -291,7 +290,7 @@ def draw_game_state(screen, game_state, valid_moves, sq_selected):
     draw_board(screen)  # Vẽ bàn cờ
     draw_pieces(screen, game_state.board)  # Vẽ các quân cờ vào
     highlight_squares(screen, game_state, valid_moves, sq_selected)  # Vẽ ô đã chọn và các ô có thể di chuyển
-    highlight_inCheck_king(screen, game_state)  # Highlight quân vua nếu bị chiếu
+    highlight_in_check_king(screen, game_state)  # Highlight quân vua nếu bị chiếu
 
 if __name__ == "__main__":
     main()
