@@ -1,4 +1,4 @@
-import pygame as p
+import pygame as py
 import ChessEngine, SmartMoveFinder as smd
 from multiprocessing import Process, Queue
 
@@ -15,21 +15,21 @@ IMAGES = {}
 def load_images():
     pieces = ["wp", "wR", "wN", "wB", "wK", "wQ", "bp", "bR", "bN", "bB", "bK", "bQ"]
     for piece in pieces:
-        IMAGES[piece] = p.transform.scale(
-            p.image.load(f"images/{piece}.png"), size=(SQ_SIZE, SQ_SIZE)
+        IMAGES[piece] = py.transform.scale(
+            py.image.load(f"images/{piece}.png"), size=(SQ_SIZE, SQ_SIZE)
         )
 
 
 def main():
-    p.init()
-    p.mixer.init()
+    py.init()
+    py.mixer.init()
 
-    screen = p.display.set_mode(size=(WIDTH, HEIGHT))
-    p.display.set_caption("Chess AI")
+    screen = py.display.set_mode(size=(WIDTH, HEIGHT))
+    py.display.set_caption("Chess AI")
 
     # Màn hình game
-    clock = p.time.Clock()
-    screen.fill(p.Color("white"))
+    clock = py.time.Clock()
+    screen.fill(py.Color("white"))
 
     game_state = ChessEngine.GameState()
     valid_moves = game_state.getValidMoves_2()
@@ -51,17 +51,17 @@ def main():
     move_finder_process = None # Process để tìm nước đi tốt nhất cho AI
     move_undone = False
 
-    move_sound = p.mixer.Sound('./audio/move-self.mp3')
-    capture_sound = p.mixer.Sound('./audio/capture.mp3')
+    move_sound = py.mixer.Sound('./audio/move-self.mp3')
+    capture_sound = py.mixer.Sound('./audio/capture.mp3')
 
     while running:
         human_turn = (game_state.whiteToMove and player_one) or (not game_state.whiteToMove and player_two)
-        for event in p.event.get():
-            if event.type == p.QUIT:
+        for event in py.event.get():
+            if event.type == py.QUIT:
                 running = False
-            elif event.type == p.MOUSEBUTTONDOWN:
+            elif event.type == py.MOUSEBUTTONDOWN:
                 if not game_over and human_turn:
-                    location = p.mouse.get_pos()
+                    location = py.mouse.get_pos()
 
                     # Do trục X nằm ngang => Tìm index của column, row
                     column = location[0] // SQ_SIZE
@@ -96,9 +96,9 @@ def main():
                             player_clicks = [sq_selected]
 
             # Xử lý event key handlers
-            elif event.type == p.KEYDOWN:
+            elif event.type == py.KEYDOWN:
                 # Nhấn phím Z
-                if event.mod & p.KMOD_CTRL and event.key == p.K_z:
+                if event.mod & py.KMOD_CTRL and event.key == py.K_z:
                     game_state.undoMove()
                     move_made = True
                     animate = False
@@ -107,7 +107,7 @@ def main():
                         move_finder_process.terminate()
                         ai_thinking = False
                     move_undone = True
-                if event.key == p.K_r: # Nhấn phím R để reset game
+                if event.key == py.K_r: # Nhấn phím R để reset game
                     game_state = ChessEngine.GameState()
                     valid_moves = game_state.getValidMoves_2()
                     sq_selected = ()
@@ -170,7 +170,7 @@ def main():
         clock.tick(MAX_FPS)
 
         # Cập nhật lại màn hình
-        p.display.flip()
+        py.display.flip()
 
 
 def highlight_squares(screen, game_state, valid_moves, sq_selected):
@@ -181,12 +181,12 @@ def highlight_squares(screen, game_state, valid_moves, sq_selected):
         row, column = sq_selected
         if game_state.board[row][column][0] == ("w" if game_state.whiteToMove else "b"):
             # Vẽ hình chữ nhật xanh lá cây cho ô đã chọn
-            s = p.Surface((SQ_SIZE, SQ_SIZE))
+            s = py.Surface((SQ_SIZE, SQ_SIZE))
             s.set_alpha(100)  # Độ trong suốt
-            s.fill(p.Color("blue"))
+            s.fill(py.Color("blue"))
             screen.blit(s, (column * SQ_SIZE, row * SQ_SIZE))
             # Vẽ các nước đi hợp lệ
-            s.fill(p.Color("yellow"))
+            s.fill(py.Color("yellow"))
             for move in valid_moves:
                 if move.startRow == row and move.startColumn == column:
                     screen.blit(
@@ -199,15 +199,15 @@ def highlight_in_check_king(screen, game_state):
         if game_state.whiteToMove:
             # Highlight màu đỏ tại quân vua của đội trắng
             white_king_location = game_state.whiteKingLocation
-            s = p.Surface((SQ_SIZE, SQ_SIZE), p.SRCALPHA)
-            s.fill(p.Color(255, 0, 0, 100))
+            s = py.Surface((SQ_SIZE, SQ_SIZE), py.SRCALPHA)
+            s.fill(py.Color(255, 0, 0, 100))
             screen.blit(s, (white_king_location[1] * SQ_SIZE, white_king_location[0] * SQ_SIZE))
             screen.blit(IMAGES["wK"], (white_king_location[1] * SQ_SIZE, white_king_location[0] * SQ_SIZE))
         else:
             # Highlight màu đỏ tại quân vua của đội đen
             black_king_location = game_state.blackKingLocation
-            s = p.Surface((SQ_SIZE, SQ_SIZE), p.SRCALPHA)
-            s.fill(p.Color(255, 0, 0, 100))
+            s = py.Surface((SQ_SIZE, SQ_SIZE), py.SRCALPHA)
+            s.fill(py.Color(255, 0, 0, 100))
             screen.blit(s, (black_king_location[1] * SQ_SIZE, black_king_location[0] * SQ_SIZE))
             screen.blit(IMAGES["bK"], (black_king_location[1] * SQ_SIZE, black_king_location[0] * SQ_SIZE))
 
@@ -223,23 +223,23 @@ def animate_move(move, screen, game_state, clock):
         draw_pieces(screen, game_state.board)
         # Xóa quân cờ tại ô cũ
         color = colors[(move.endRow + move.endColumn) % 2]
-        end_square = p.Rect(move.endColumn * SQ_SIZE, move.endRow * SQ_SIZE, SQ_SIZE, SQ_SIZE)
-        p.draw.rect(screen, color, end_square)
+        end_square = py.Rect(move.endColumn * SQ_SIZE, move.endRow * SQ_SIZE, SQ_SIZE, SQ_SIZE)
+        py.draw.rect(screen, color, end_square)
         # Vẽ quân cờ tại ô mới
         if move.pieceCaptured != "--":
             screen.blit(IMAGES[move.pieceCaptured], end_square)
         
         # Vẽ quân cờ di chuyển
-        screen.blit(IMAGES[move.pieceMoved], p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
-        p.display.flip()
+        screen.blit(IMAGES[move.pieceMoved], py.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
+        py.display.flip()
         clock.tick(120)
 
 def draw_text(screen, text):
-    font = p.font.SysFont("Helvitca", 50, True, False)
-    text_object = font.render(text, 0, p.Color("Gray"))
-    text_location = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH / 2 - text_object.get_width() / 2, HEIGHT / 2 - text_object.get_height() / 2)
+    font = py.font.SysFont("Helvitca", 50, True, False)
+    text_object = font.render(text, 0, py.Color("Gray"))
+    text_location = py.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH / 2 - text_object.get_width() / 2, HEIGHT / 2 - text_object.get_height() / 2)
     screen.blit(text_object, text_location)
-    text_object = font.render(text, 0, p.Color("Black"))
+    text_object = font.render(text, 0, py.Color("Black"))
     screen.blit(text_object, text_location.move(2, 2))
 
 def draw_board(screen):
@@ -247,14 +247,14 @@ def draw_board(screen):
     Vẽ các hình vuông cho bàn cờ,
     """
     global colors
-    colors = [p.Color("#ebecd0"), p.Color("#739552")]
+    colors = [py.Color("#ebecd0"), py.Color("#739552")]
     for row in range(DIMENSION):
         for column in range(DIMENSION):
             color = colors[(row + column) % 2]
-            p.draw.rect(
+            py.draw.rect(
                 screen,
                 color,
-                p.Rect(
+                py.Rect(
                     column * SQ_SIZE,
                     row * SQ_SIZE,
                     SQ_SIZE,
@@ -277,7 +277,7 @@ def draw_pieces(screen, board):
                 screen.blit(
                     IMAGES[piece],
                     # Định nghĩa HCN có các tham số left, top, width, height
-                    p.Rect(
+                    py.Rect(
                         column * SQ_SIZE,
                         row * SQ_SIZE,
                         SQ_SIZE,
