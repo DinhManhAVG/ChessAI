@@ -207,7 +207,7 @@ def highlight_in_check_king(screen, game_state):
             # Highlight màu đỏ tại quân vua của đội đen
             black_king_location = game_state.blackKingLocation
             s = py.Surface((SQ_SIZE, SQ_SIZE), py.SRCALPHA)
-            s.fill(p.Color(255, 0, 0, 100))
+            s.fill(py.Color(255, 0, 0, 100))
             screen.blit(s, (black_king_location[1] * SQ_SIZE, black_king_location[0] * SQ_SIZE))
             screen.blit(IMAGES["bK"], (black_king_location[1] * SQ_SIZE, black_king_location[0] * SQ_SIZE))
 
