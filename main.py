@@ -1,4 +1,4 @@
-import pygame as p
+import pygame as py
 import ChessEngine, SmartMoveFinder as smd
 from multiprocessing import Process, Queue
 
