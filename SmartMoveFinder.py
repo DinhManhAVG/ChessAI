@@ -77,17 +77,13 @@ def find_random_move(valid_moves):
 # Greedy algorithm
 def score_material(board):
     """
-    Score the material on the board
-    Ví dụ: Tới lượt trắng có thể ăn quân tượng hoặc xe của đối phương thì 
-    sẽ ưu tiên ăn quân xe vì điểm số của quân xe cao hơn
+    Ví dụ: Tới lượt trắng có thể ăn quân tượng hoặc xe của đối phương thì sẽ ưu tiên ăn quân xe vì điểm số của quân xe cao hơn
+    Do đó sẽ ưu tiên ăn các quân đen có piece_score để tránh bị giảm giá trị score của bàn cờ và giúp tối ưu nước đi cho quân trắng
+    =================================================================================================================
+    Ngược lại với lượt đi quân đen, nó cũng sẽ ưu tiên ăn các quân có điểm cao để lúc tính giá trị bàn cờ thì các quân có điểm cao đã bị ăn
+    nên score của bàn cờ sẽ giảm đi và giúp tối ưu nước đi cho quân đen
     """
     score = 0
-    # for row in board:
-    #     for square in row:
-    #         if square[0] == "w":
-    #             score += piece_score[square[1]]
-    #         elif square[0] == "b":
-    #             score -= piece_score[square[1]]
 
     for row in range(len(board)):
         for col in range(len(board[row])):
@@ -102,20 +98,7 @@ def score_material(board):
                     score -= piece_score[piece[1]] + piece_position_score
     return score
 
-def score_board(gs):
-    """
-    Điểm dương tốt cho trắng và điểm âm tốt cho đen
-    """
-    if gs.checkMate:
-        if gs.whiteToMove:
-            return -CHECKMATE # Black wins
-        else:
-            return CHECKMATE # White wins
-    elif gs.staleMate:
-        return STALEMATE
-    
-    return score_material(gs.board)
-
+# find_best_move sử dụng minimax với 2 tầng
 def find_best_move(gs, valid_moves):
     print("find_best_move")
     turn_multiplier = 1 if gs.whiteToMove else -1
@@ -150,7 +133,7 @@ def find_best_move(gs, valid_moves):
         gs.undoMove()
     return  best_player_move
 
-def find_best_move_minimax_without_ab(gs, valid_moves, returnQueue):
+def find_best_move_minimax_without_ab(gs, valid_moves, return_queue):
     """
     Phương pháp giúp gọi đệ quy lần đầu tiên
     """
@@ -160,21 +143,25 @@ def find_best_move_minimax_without_ab(gs, valid_moves, returnQueue):
     moving_count = 0
 
     find_move_minimax(gs, valid_moves, DEPTH, gs.whiteToMove,0, 0)
-    returnQueue.put(next_move)
+    return_queue.put(next_move)
     print("Moving count: ", moving_count)
     return next_move
 
 
-def find_best_move_minimax(gs, valid_moves, returnQueue):
+def find_best_move_minimax(gs, valid_moves, return_queue):
+    """
+    Tối ưu nước đi cho quân đen_AI (vì khi đến nước quân đen thì sẽ gọi hàm này)
+    """
     global next_move, moving_count
     next_move = None
     alpha = -CHECKMATE
     beta = CHECKMATE
     
     moving_count = 0
+
     find_move_minimax(gs, valid_moves, DEPTH, gs.whiteToMove, alpha, beta, is_apply_alpha_beta=True)
     print("Moving count: ", moving_count)
-    returnQueue.put(next_move)
+    return_queue.put(next_move)
 
 def find_move_minimax(gs, valid_moves, depth, white_to_move, alpha, beta, is_apply_alpha_beta=False):
     global next_move, moving_count
